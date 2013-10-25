@@ -36,7 +36,13 @@ void my_itob(int n, char s[],int base)
 	do {
 		digit = n%base;
 		digit = (digit < 0)? -digit:digit;
-		start = (digit > 9)?'a':'0';
+
+		if (digit >= 10) {
+			start = 'a';
+			digit-= 10;
+		} else {
+			start = '0';
+		}
 
 		s[i++]= digit + start; /*getnextdigit*/
 
