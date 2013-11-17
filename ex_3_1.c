@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define ARRAYSIZE 10000
+#define ARRAYSIZE 100000
 
 int arr[ARRAYSIZE];
 
@@ -88,13 +88,18 @@ int binsearch2(int x, int v[], int n)
 
 int main() {
 	int r,p;
+	int count=ARRAYSIZE/100;
 	gen_arr();
 	sort();
 
 	/* now we need to find a random value */
-	r = (int) (rand()/2);
-	p = binsearch2(r,arr,ARRAYSIZE);
-	printf("%d found at position %d\n", r, p );
+	while (count) {
+		r = (int) (rand()/2);
+		p = binsearch(r,arr,ARRAYSIZE);
+		p = binsearch2(r,arr,ARRAYSIZE);
+
+		count--;
+	}
 	
 	return 0;
 }
