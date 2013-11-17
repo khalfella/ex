@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-int expand(char* s1, char* s2) {
+int expand(char* s1, char* s2) { //djdjjdjdjdj
 
 	char beg,end,c;
 	int dash,direction;
