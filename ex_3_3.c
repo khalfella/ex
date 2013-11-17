@@ -54,7 +54,10 @@ int expand(char* s1, char* s2) {
 			}
 
 		} else if (s1[i] == '-') {
-			if (beg) {
+			if (dash) {
+				s2[j++] = beg; s2[j++] = '-'; s2[j++] = '-';
+				beg = '\0'; dash = 0;
+			} else if (beg) {
 				dash = 1;
 			} else {
 				s2[j++] = '-';
