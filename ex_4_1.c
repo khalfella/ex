@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MAXLINE 1000 /* maximum input line length */
+#define	MAXLINE 1000 /* maximum input line length */
 
 int get_line(char s[], int lim);
 int strindex(char source[], char searchfor[]);
@@ -27,38 +27,40 @@ main()
 			found++;
 		}
 	}
-	return found;
+	return (found);
 }
 
 /* getline:  get line into s, return length */
-int get_line(char s[], int lim)
+int
+get_line(char s[], int lim)
 {
 	int c, i;
 	i = 0;
-	while (--lim > 0 && (c=getchar()) != EOF && c != '\n')
+	while (--lim > 0 && (c = getchar()) != EOF && c != '\n')
 		s[i++] = c;
 	if (c == '\n')
 		s[i++] = c;
 
 	s[i] = '\0';
-	return i;
+	return (i);
 }
 
 
 /* strindex:  return index of t in s, -1 if none */
-int strindex(char s[], char t[])
+int
+strindex(char s[], char t[])
 {
 	int i, j, k;
 	int slen = strlen(s);
 	int tlen = strlen(t);
 
-	for (i = slen - tlen - 1; i >= 0 ; i--) {
-		for (j=i, k=0; t[k]!='\0' && s[j]==t[k]; j++, k++)
+	for (i = slen - tlen - 1; i >= 0; i--) {
+		for (j = i, k = 0; t[k] != '\0' && s[j] == t[k]; j++, k++)
 			;
 
 	if (k > 0 && t[k] == '\0')
-		return i;
+		return (i);
 	}
 
-	return -1;
+	return (-1);
 }
