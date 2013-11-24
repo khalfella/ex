@@ -7,16 +7,12 @@
 
 char* strcat(char *s1, char *s2) {
 	char* ret = s1;
-	if (*s1) {		/* seek to the end of s1 */
-		while(*++s1)
-			;
+
+	while (*s1) {		/* seek to the end of s1 */
+		s1++;
 	}
 
-	while(*s2) {
-		*s1++ = *s2++;
-	}
-
-	*s1 = '\0';
+	while(*s1++ = *s2++) { } 
 
 	return ret;
 }
