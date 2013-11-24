@@ -46,7 +46,7 @@ int strn_cmp(char *s, char *t, int n) {
 		return 0;
 	}
 
-	return 1;
+	return s[-1] - t[-1];
 }
 
 int main() {
@@ -59,7 +59,7 @@ int main() {
 	strn_cpy(s,s1,100);
 	strn_cat(s,s2,100);
 
-	comp = strn_cmp("m","mohamed",2);
+	comp = strn_cmp("sami","mohamed",200);
 
 	printf ("s = %s comp = %d\n", s, comp);
 
