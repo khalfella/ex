@@ -1,14 +1,13 @@
 /*
- * Exercise 5-15. Add the option -f to fold upper and lower case together,
- * so that case distinctions are not made during sorting
- * for example, a and A compare equal.
+ * Exercise 5-16. Add the -d (``directory order'') option,
+ * which makes comparisons only on letters, numbers and blanks.
+ * Make sure it works in conjunction with -f.
  */
-
-
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #define	MAXLINES 5000	  /* max #lines	to be sorted */
 #define MAXLEN	 1000	  /* max line length */
@@ -18,12 +17,42 @@ char *lineptr[MAXLINES];  /* pointers to text lines */
 int readlines(char *lineptr[], int nlines);
 
 void writelines(char *lineptr[], int nlines);
-void q_sort(void	*v[], int	left, int right,
-	int (*comp)(void *, void *));
+void q_sort(int dir, void *v[], int	left, int right,
+	int (*comp)(int, void *, void *));
 
-void q_sort_r(void	*v[], int	left, int right,
-	int (*comp)(void *, void *));
-int numcmp(char	*, char	*);
+void q_sort_r(int dir, void *v[], int	left, int right,
+	int (*comp)(int ,void *, void *));
+int numcmp(int dir, char	*, char	*);
+
+
+/* move the pointer to the first comparable character */
+int skip (char **s) {
+	while (!isalpha(**s) && !isdigit(**s) && !isspace(**s) && **s) {
+		(*s)++;
+	}
+	return 1;
+}
+
+
+int str_cmp(int dir, char *s, char *t) {
+	if (dir) {
+		while (skip (&s) && skip (&t) && *s++ == *t++ && s[-1] ) { }
+		return s[-1] - t[-1];
+	} else {
+		while (*s++ == *t++ && s[-1] ) { }
+		return s[-1] - t[-1];
+	}
+}
+
+int str_case_cmp(int dir, char *s, char *t) {
+	if (dir) {
+		while (skip (&s) && skip (&t) && tolower(*s++) == tolower(*t++) && s[-1] ) {}
+		return tolower(s[-1]) - tolower(t[-1]);
+	} else {
+		while (tolower(*s++) == tolower(*t++) && s[-1] ) {}
+		return tolower(s[-1]) - tolower(t[-1]);
+	}
+}
 
 
 /* sort	input lines */
@@ -33,32 +62,36 @@ int main(int argc, char *argv[])
 	int numeric = 0;   /* 1	if numeric sort	*/
 	int reverse = 0;   /* 1 if sort in reverse order */
 	int fold = 0;	   /* 1 if case insensitive order */
-	int (*cmp)(void*, void*);
-	void (*sort)(void**, int, int, int (*)(void*,void*));
+	int dir = 0; /* 1 for directory comparison */
+
+	int (*cmp)(int, void*, void*);
+	void (*sort)(int, void**, int, int, int (*)(int, void*,void*));
 
 
 	while (*++argv) {
 		if (strcmp(*argv, "-n") == 0)
 			numeric = 1;
-		if (strcmp(*argv, "-r") == 0)
+		else if (strcmp(*argv, "-r") == 0)
 			reverse = 1;
-		if (strcmp(*argv, "-f") == 0)
+		else if (strcmp(*argv, "-f") == 0)
 			fold = 1;
+		else if (strcmp(*argv, "-d") == 0)
+			dir = 1;
 	}
 
 	
-	sort = (reverse)?q_sort_r:q_sort;
-	cmp = (int (*)(void*,void*))strcmp;
+	sort = (!reverse)?q_sort:q_sort_r;
+	cmp = (int (*)(int, void*,void*))str_cmp;
 	
 	if (numeric) {
-		cmp = (int (*)(void*,void*))numcmp;
+		cmp = (int (*)(int, void*,void*))numcmp;
 	} else if (fold) {
-		cmp = (int (*)(void*,void*))strcasecmp;
+		cmp = (int (*)(int, void*,void*))str_case_cmp;
 	}
 	
 
 	if ((nlines = readlines(lineptr, MAXLINES)) >= 0) {
-		(*sort)((void**) lineptr, 0, nlines-1,cmp);
+		(*sort)(dir,(void**) lineptr, 0, nlines-1,cmp);
 
 		writelines(lineptr, nlines);
 		return 0;
@@ -69,7 +102,7 @@ int main(int argc, char *argv[])
 }
 
 
-int numcmp(char *s1, char *s2)
+int numcmp(int dir, char *s1, char *s2)
 {
 	double v1, v2;
 	v1 = atof(s1);
@@ -91,8 +124,8 @@ void swap(void *v[],  int i, int j)
 }
 
 /* q_sort:  sort v[left]...v[right] into increasing order */
-void q_sort(void *v[], int left, int right,
-              int (*comp)(void *, void *))
+void q_sort(int dir, void *v[], int left, int right,
+              int (*comp)(int, void *, void *))
 {
 	int i, last;
 	void swap(void *v[], int, int);
@@ -102,18 +135,18 @@ void q_sort(void *v[], int left, int right,
 	swap(v, left, (left + right)/2);
 	last = left;
 	for (i = left+1; i <= right;  i++)
-		if ((*comp)(v[i], v[left]) < 0)
+		if ((*comp)(dir, v[i], v[left]) < 0)
 			swap(v, ++last, i);
 
 	swap(v, left, last);
-	q_sort(v, left, last-1, comp);
-	q_sort(v, last+1, right, comp);
+	q_sort(dir, v, left, last-1, comp);
+	q_sort(dir, v, last+1, right, comp);
 }
 
 
 /* q_sort_r:  sort v[left]...v[right] into decreasing order */
-void q_sort_r(void *v[], int left, int right,
-              int (*comp)(void *, void *))
+void q_sort_r(int dir, void *v[], int left, int right,
+              int (*comp)(int, void *, void *))
 {
 	int i, last;
 	void swap(void *v[], int, int);
@@ -123,12 +156,12 @@ void q_sort_r(void *v[], int left, int right,
 	swap(v, left, (left + right)/2);
 	last = left;
 	for (i = left+1; i <= right;  i++)
-		if ((*comp)(v[i], v[left]) >= 0)
+		if ((*comp)(dir, v[i], v[left]) >= 0)
 			swap(v, ++last, i);
 
 	swap(v, left, last);
-	q_sort_r(v, left, last-1, comp);
-	q_sort_r(v, last+1, right, comp);
+	q_sort_r(dir, v, left, last-1, comp);
+	q_sort_r(dir, v, last+1, right, comp);
 }
 
 int get_line(char *, int);
