@@ -105,14 +105,31 @@ getword(char *word, int lim)
 
 	if (c != EOF)
 		*w++ = c;
-	if (!isalpha(c) && c != '_' && c != '"') {
+	if (!isalpha(c) && c != '_' && c != '"' && c != '/') {
 		*w = '\0';
 		return (c);
 	}
 	for (; --lim > 0; w++) {
-		if (isalnum(*w = getch()) ||  *w == '_')
+		*w = getch();
+
+
+		if (word[0] == '/') {
+			if (word[1] != '*') { /* it looks like a comment but it is not */
+				ungetch(word[1]);
+				word[1] = '\0';
+				return (word[0]);
+			}
+
+			/* we in a comment, are we exiting */
+			if (w[-1] == '*' && *w == '/') {
+				w++;
+				break;
+			}
+			/* anything else is allowed inside a comment */
 			continue;
-		if (c == '"') { /* are we in quotes */
+		}
+
+		if (word[0] == '"') { /* are we in quotes */
 			/* are we exiting */
 			if ( *w == '"' && w[-1] != '\\') {
 				w++;
@@ -122,6 +139,9 @@ getword(char *word, int lim)
 			/* everyting else is permitted in quotes */
 			continue;
 		}
+
+		if (isalnum(*w) ||  *w == '_')
+			continue;
 
 		/* we are not in quotes and this is not alphanum */
 		ungetch(*w);
