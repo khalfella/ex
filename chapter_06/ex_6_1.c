@@ -109,11 +109,24 @@ getword(char *word, int lim)
 		*w = '\0';
 		return (c);
 	}
-	for (; --lim > 0; w++)
-		if (!isalnum(*w = getch()) && *w != '_' && *w != '"') {
-			ungetch(*w);
-			break;
+	for (; --lim > 0; w++) {
+		if (isalnum(*w = getch()) ||  *w == '_')
+			continue;
+		if (c == '"') { /* are we in quotes */
+			/* are we exiting */
+			if ( *w == '"' && w[-1] != '\\') {
+				w++;
+				break;
+			}
+
+			/* everyting else is permitted in quotes */
+			continue;
 		}
+
+		/* we are not in quotes and this is not alphanum */
+		ungetch(*w);
+		break;
+	}
 
 	*w = '\0';
 	return (word[0]);
