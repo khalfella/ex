@@ -41,7 +41,7 @@ char *str_dup(char *s)   /* make a duplicate of s */
 
 
 /* add the variable vname to the tree */
-struct tnode *addvar(struct tnode *p, char *vname)
+struct tnode *addvar(struct tnode *p, char *vname, int n)
 {
 	int cond;
 	struct varnode *v;
@@ -52,7 +52,7 @@ struct tnode *addvar(struct tnode *p, char *vname)
 		v = p->var = varalloc();
 		v->vname = str_dup(vname);
 		v->next = NULL;
-	} else if ((cond = strncmp(vname, p->var->vname, 6)) == 0) {
+	} else if ((cond = strncmp(vname, p->var->vname, n)) == 0) {
 		/* add the variable to this node */
 		v = p->var;
 		while (v->next) {
@@ -64,9 +64,9 @@ struct tnode *addvar(struct tnode *p, char *vname)
 		v->next = NULL;
 	}
 	else if (cond < 0)		/* less than into left subtree */
-		p->left = addvar(p->left, vname);
+		p->left = addvar(p->left, vname, n);
 	else				/* greater than into right subtree */
-		p->right = addvar(p->right, vname);
+		p->right = addvar(p->right, vname, n);
 	return p;
 }
 
@@ -146,15 +146,20 @@ int getvariable(char* vname) {
 	return 0;
 }
 
-/* word frequency count */
-int main()
+int main(int argc, char **argv)
 {
+	int n = 0;
+	if (*++argv) {
+		n = atoi(*argv);
+	}
+	n = (n)?n:6;
+
 	struct tnode *root;
 	char vname[MAXVAR];
 	root = NULL;
 
 	while (getvariable(vname)) {
-			root = addvar(root, vname);
+			root = addvar(root, vname, n);
 	}
 
 	treeprint(root);
