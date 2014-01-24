@@ -5,32 +5,38 @@
 struct tnode;
 struct lnode;
 
+
+/* this is the core data structure that stores the words */
 struct wnode {
-	char *word;
-	int count;
-	struct tnode *tn;
-	struct lnode *ln;
+	char *word;			/* a pointer to the word */
+	int count;			/* frequency of the word */
+	struct tnode *tn;		/* which tree node this wnode is connected to */
+	struct lnode *ln;		/* which linked list node this wnode is connected to */
 };
 
+/* tree node */
 struct tnode {
-	struct wnode *wn;
-	struct tnode *left;
-	struct tnode *right;
-	struct tnode *parent;
+	struct wnode *wn;		/* each tnode is connected to a wnode (word and count) */
+	struct tnode *left;		/* left child */
+	struct tnode *right;		/* right child */
+	struct tnode *parent;		/* parent node */
 };
 
+/* linked list node */
 struct lnode {
-	struct wnode *wn;
-	struct lnode *next;
-	struct lnode *prev;
+	struct wnode *wn;		/* each linked list node is connected to a wnode */
+	struct lnode *next;		/* next element in the list */
+	struct lnode *prev;		/* prev element in the list */
 };
 
+/* a container that contain both the tree and the linked list */
 struct words {
-	struct tnode *troot;
-	struct lnode *lroot;
+	struct tnode *troot;		/* the binary tree where words are ordered alphabetically */
+	struct lnode *lroot;		/* the liked list where wnodes are ordered by frequency (count) */
 };
 
 
+/* allocate a new tree node and initialize it */
 struct tnode *tnodealloc() {
 	struct tnode *t;
 	t = (struct tnode*) malloc(sizeof(struct tnode));
@@ -39,6 +45,7 @@ struct tnode *tnodealloc() {
 	return t;
 };
 
+/* allocate a new linked list node and initialize it */
 struct lnode* lnodealloc() {
 	struct lnode *ln;
 	ln = (struct lnode*) malloc(sizeof(struct lnode));
@@ -47,6 +54,7 @@ struct lnode* lnodealloc() {
 	return ln;
 };
 
+/* allocate a new word node and intialize it */
 struct wnode* wnodealloc() {
 	struct wnode *wn;
 	wn = (struct wnode*) malloc(sizeof(struct wnode));
@@ -57,6 +65,10 @@ struct wnode* wnodealloc() {
 	return wn;
 };
 
+
+/*
+ * check two liked list nodes, usually they are adjacent such as y = x->next
+ */
 
 int lnodes_inorder(struct lnode *x, struct lnode *y) {
 	if (x == NULL || y == NULL)
@@ -69,24 +81,33 @@ int lnodes_inorder(struct lnode *x, struct lnode *y) {
 	return 0;
 }
 
-
+/*
+ * If two nodes in the list are not in order, then we need to swap them
+ * this is used to maintain the linked list ordered by frequency (count)
+ * We don't swap the nodes themselves, just the wnode pointers (wn), we also
+ * need to update the wnode structure to tell them about their new lnodes
+ */
 void swap_lnodes(struct lnode *x, struct lnode *y) {
 	struct wnode* wn;
 	struct lnode* ln;
 	if (x == NULL || y == NULL)
 		return;
 
+	/* swap the wnode pointers */
 	wn = x->wn;
 	x->wn = y->wn;
 	y->wn = wn;
 
-
+	/* update the wnodes with their new lnodes */
 	ln = x->wn->ln;
 	x->wn->ln = y->wn->ln;
 	y->wn->ln = ln;
 }
 
-
+/*
+ * This function is called each time a new word is found already in the tree
+ * As the linked list may no longer be in order, we need to fix this to maintain the order
+ */
 void balance_word_list (struct lnode *ln) {
 	/* make sure that we maintain the list ordered */
 	struct lnode *cn;
@@ -95,15 +116,21 @@ void balance_word_list (struct lnode *ln) {
 		return;
 
 	cn = ln;
-
+	/* compare the node with its next, and walk forward */
 	while (cn != NULL && !lnodes_inorder(cn, cn->next)) {
+		/* the nodes are not in order, then swap them */
 		swap_lnodes(cn, cn->next);
+		/* progress forward in the linked list */
 		cn = cn->next;
 	}
 }
 
+/*
+ * every time we add a new word to the tree, we need to add it also to the liked list
+ * add_to_word_list() will do this. It will add the node is the first position in the list
+ */
+
 void add_to_word_list (struct wnode *wn, struct lnode *lroot ) {
-	/* add this word node to the list */
 
 	struct lnode *ln;
 
@@ -113,23 +140,37 @@ void add_to_word_list (struct wnode *wn, struct lnode *lroot ) {
 	}
 
 
-	/* wn should be added as the second element in the list */
-
-	ln = lnodealloc();
-	ln->wn = wn;
-	wn->ln = ln;
-	ln->prev = lroot;
+	ln = lnodealloc();	/* allocate a new linked list element */
+	ln->wn = wn;		/* attach the wnode to this new element */
+	wn->ln = ln;		/* tell the wnode which lnode points to it */
+	ln->prev = lroot;	/* add the node as the second element in the list */
 	ln->next = lroot->next;
 
-	swap_lnodes(lroot, ln);
+	swap_lnodes(lroot, ln); /*
+				 * swap the root of the liked list with the second element
+				 * this has the effect of adding the new element as the
+				 * first element in the list. We take all this overhead as
+				 * we can't change the pointer to the first element in the
+				 * liked list
+				 */
 
+	/*
+	 * if there was more that one element in the list, then update the second element to
+	 * point to this newly added lnode
+	 */
 	if (lroot->next) {
 		lroot->next->prev = ln;
 	}
 
+	/* finally, set the new element as the second element in the list */
 	lroot->next = ln;
 	
 }
+
+
+/*
+ * This function is called each time we want to add a new word
+ */
 void insert(struct words *w, char *word) {
 
 
@@ -139,7 +180,7 @@ void insert(struct words *w, char *word) {
 	if (!w || (!w->troot && w->lroot) || (!w->lroot && w->troot))
 		return;
 
-
+	/* is this the first word to be added */
 	if (!w->troot && !w->lroot) {
 		wn = wnodealloc();
 		w->troot = tnodealloc();
@@ -157,17 +198,17 @@ void insert(struct words *w, char *word) {
 	}
 
 
-	/* search the tree, and insert the node */
+	tn = w->troot;	/* tn points to the root of the tree */
 
-	tn = w->troot;
-
+	/* this is an infinite loop as we will break the loop once we add the new word */
 	while (1) {
-		wn = tn->wn;
+
+		wn = tn->wn;		/* get the wnode associated with this tnode */
 
 		if ((cond = strcmp(wn->word, word)) == 0) {
 			/* well we have found the wnode */
-			wn->count++;
-			balance_word_list(wn->ln);
+			wn->count++;				/* increment the counter */
+			balance_word_list(wn->ln);		/* make sure that the linked list is balanced */
 			break;
 
 		} else if (cond < 0 ) {
@@ -176,17 +217,17 @@ void insert(struct words *w, char *word) {
 				tn = tn->left;
 				continue;
 			}
-			/* allocate a new wnode */
-			wn = wnodealloc();
-			wn->word = strdup(word);
-			wn->count = 1;
 
-			cn = tnodealloc();
-			cn->wn = wn;
-			cn->parent = tn;
-			tn->left = cn;
-			wn->tn = cn;
-			add_to_word_list(wn,w->lroot);
+			wn = wnodealloc();			/* allocate a new wnode */
+			wn->word = strdup(word);		/* copy the word */
+			wn->count = 1;				/* initialize the count to 1 */
+
+			cn = tnodealloc();			/* allocate a new tnode */
+			cn->wn = wn;				/* the child node should point to the newly allocted wnode */
+			cn->parent = tn;			/* set the parent */
+			tn->left = cn;				/* in this case it is the left child of its parent */
+			wn->tn = cn;				/* update the wnode with its tnode */
+			add_to_word_list(wn,w->lroot);		/* add this wnode to the liked list */
 			break;
 			
 			
@@ -197,7 +238,6 @@ void insert(struct words *w, char *word) {
 				continue;
 			}
 
-			/* allocate a new wnode */
 			wn = wnodealloc();
 			wn->word = strdup(word);
 			wn->count = 1;
